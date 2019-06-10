@@ -1,4 +1,4 @@
-﻿namespace OctopusSearch.ConsoleApp.Models
+﻿namespace OctopusSearch.Core.Models
 {
     public class FoundProjectByRole
     {
