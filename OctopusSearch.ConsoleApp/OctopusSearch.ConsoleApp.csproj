@@ -24,7 +24,7 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>1</ApplicationRevision>
+    <ApplicationRevision>2</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -94,7 +94,7 @@
       <Version>0.2.1</Version>
     </PackageReference>
     <PackageReference Include="Octopus.Client">
-      <Version>4.41.5</Version>
+      <Version>4.47.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
