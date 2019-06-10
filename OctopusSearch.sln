@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OctopusSearch.Core", "Octop
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OctopusSearch.ConsoleApp", "OctopusSearch.ConsoleApp\OctopusSearch.ConsoleApp.csproj", "{4D3E081D-1662-4CC4-8F8D-5DF6239131EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OctopusSearch.Win", "OctopusSearch.Win\OctopusSearch.Win.csproj", "{93049EAE-E3B1-4548-824B-9723DC524915}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{4D3E081D-1662-4CC4-8F8D-5DF6239131EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D3E081D-1662-4CC4-8F8D-5DF6239131EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4D3E081D-1662-4CC4-8F8D-5DF6239131EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93049EAE-E3B1-4548-824B-9723DC524915}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93049EAE-E3B1-4548-824B-9723DC524915}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93049EAE-E3B1-4548-824B-9723DC524915}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93049EAE-E3B1-4548-824B-9723DC524915}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
