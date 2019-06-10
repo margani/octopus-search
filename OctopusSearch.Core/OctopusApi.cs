@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Octopus.Client;
 using Octopus.Client.Model;
-using OctopusSearch.ConsoleApp.Models;
+using OctopusSearch.Core.Models;
 
-namespace OctopusSearch.ConsoleApp
+namespace OctopusSearch.Core
 {
     public class OctopusApi
     {
