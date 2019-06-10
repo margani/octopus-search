@@ -48,7 +48,7 @@ namespace OctopusSearch.ConsoleApp
                         var searchFor = Input.ReadString("Search for: ");
 
                         _octopusApi.SearchVariablesFor(searchFor)
-                            .ForEach(o => Console.WriteLine($"Project: {o.Project}, Variable: {o.VariableName}, Value: {o.VariableValue}"));
+                            .ForEach(o => Console.WriteLine($"Project: {o.Project}, VariableSet: {o.VariableSet}, Variable: {o.VariableName}, Value: {o.VariableValue}"));
                     })
                 .Add("Get projects by role(s) (which are specified in the project's process)", () =>
                     {
