@@ -1,20 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using EasyConsole;
+using System.IO;
+using EasyConsoleCore;
+using Microsoft.Extensions.Configuration;
 using NDesk.Options;
+using OctopusSearch.Core;
 
 namespace OctopusSearch.ConsoleApp
 {
     class Program
     {
         private static OctopusApi _octopusApi;
-        private static bool Exiting = false;
+        private static bool _exiting = false;
 
         private static void Main(string[] args)
         {
-            var apiUrl = ConfigurationManager.AppSettings["OctopusAPIUrl"];
-            var apiKey = ConfigurationManager.AppSettings["OctopusAPIKey"];
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+            var configuration = builder.Build();
+
+            Console.WriteLine(configuration.GetConnectionString("Storage"));
+
+            var apiUrl = configuration["Octopus:APIUrl"];
+            var apiKey = configuration["Octopus:APIKey"];
             var help = false;
 
             var p = new OptionSet {
@@ -42,7 +53,7 @@ namespace OctopusSearch.ConsoleApp
                                   "example: octopus-search -api-url 'http://myoctopuswebsite.com' -api-key 'API-XXX'");
             }
 
-            var menu = new EasyConsole.Menu()
+            var menu = new EasyConsoleCore.Menu()
                 .Add("Search variables (by name and value)", () =>
                     {
                         var searchFor = Input.ReadString("Search for: ");
@@ -82,12 +93,12 @@ namespace OctopusSearch.ConsoleApp
                     })
                 .Add("Exit", () =>
                     {
-                        Exiting = true;
+                        _exiting = true;
                         Environment.Exit(0);
                     })
                 ;
 
-            while (!Exiting)
+            while (!_exiting)
             {
                 menu.Display();
 
