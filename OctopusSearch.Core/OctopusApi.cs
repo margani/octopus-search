@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Octopus.Client;
 using Octopus.Client.Model;
-using OctopusSearch.ConsoleApp.Models;
+using OctopusSearch.Core.Models;
 
-namespace OctopusSearch.ConsoleApp
+namespace OctopusSearch.Core
 {
     public class OctopusApi
     {
@@ -25,11 +25,15 @@ namespace OctopusSearch.ConsoleApp
             _repository = new OctopusRepository(endpoint);
         }
 
-        public FoundProjectVariable[] SearchVariablesFor(string search, bool doSearchInVariableSetsToo = false)
+        public FoundProjectVariable[] SearchVariablesFor(string search, bool doSearchInVariableSetsToo = true)
         {
+            var findings = new List<FoundProjectVariable>();
+
+            Console.WriteLine("Getting all library variable sets");
+            var libraryVariableSets = _repository.LibraryVariableSets.FindAll();
+
             Console.WriteLine("Getting all projects");
             var projects = _repository.Projects.GetAll();
-            var findings = new List<FoundProjectVariable>();
 
             Console.Write("Searching project variables...");
             foreach (var project in projects)
@@ -37,18 +41,29 @@ namespace OctopusSearch.ConsoleApp
                 var variables = _repository.VariableSets.Get(project.VariableSetId).Variables;
                 if (doSearchInVariableSetsToo)
                 {
+                    var vs = project
+                        .IncludedLibraryVariableSetIds
+                        .SelectMany(o => _repository.VariableSets.Get(libraryVariableSets.Single(oo => oo.Id == o).VariableSetId).Variables);
+
                     variables = variables
-                        .Union(
-                            project
-                                .IncludedLibraryVariableSetIds
-                                .SelectMany(o => _repository.VariableSets.Get(o).Variables)
-                        ).ToList();
+                        .Union(vs)
+                        .ToList();
                 }
 
                 findings.AddRange(
                     from variable in variables
                     where variable.Name?.Contains(search) == true || variable.Value?.Contains(search) == true
                     select new FoundProjectVariable { Project = project.Name, VariableName = variable.Name, VariableValue = variable.Value });
+            }
+
+            Console.Write("Searching variable sets...");
+            foreach (var variableSet in libraryVariableSets)
+            {
+                var variables = _repository.VariableSets.Get(variableSet.VariableSetId).Variables;
+                findings.AddRange(
+                    from variable in variables
+                    where variable.Name?.Contains(search) == true || variable.Value?.Contains(search) == true
+                    select new FoundProjectVariable { VariableSet = variableSet.Name, VariableName = variable.Name, VariableValue = variable.Value });
             }
 
             return findings.ToArray();
