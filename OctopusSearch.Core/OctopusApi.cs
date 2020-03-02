@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Octopus.Client;
+using System.Threading.Tasks;
 using Octopus.Client.Model;
 using OctopusSearch.Core.Models;
 
@@ -9,41 +9,43 @@ namespace OctopusSearch.Core
 {
     public class OctopusApi
     {
-        private readonly OctopusRepository _repository;
-
-        public string ApiUrl { get; set; }
-        public string ApiKey { get; set; }
+        private readonly OctopusRestClient _octopusClient;
 
         private const string OctopusActionTargetRolesKey = "Octopus.Action.TargetRoles";
 
         public OctopusApi(string server, string apiKey)
         {
-            ApiUrl = server;
-            ApiKey = apiKey;
-
-            var endpoint = new OctopusServerEndpoint(server, apiKey);
-            _repository = new OctopusRepository(endpoint);
+            _octopusClient = new OctopusRestClient(server, apiKey);
         }
 
-        public FoundProjectVariable[] SearchVariablesFor(string search, bool doSearchInVariableSetsToo = true)
+        public async Task<FoundProjectVariable[]> SearchVariablesFor(string search, bool doSearchInVariableSetsToo = true)
         {
             var findings = new List<FoundProjectVariable>();
 
             Console.WriteLine("Getting all library variable sets");
-            var libraryVariableSets = _repository.LibraryVariableSets.FindAll();
+            var libraryVariableSets = await _octopusClient.GetResources<LibraryVariableSetResource>("LibraryVariableSets/all");
+
+            //Console.WriteLine("Getting all variable sets");
+            //var variableSets = await _octopusClient.GetResources<VariableSetResource>("Variables/all");
 
             Console.WriteLine("Getting all projects");
-            var projects = _repository.Projects.GetAll();
+            var projects = await _octopusClient.GetResources<ProjectResource>("Projects/all");
 
             Console.Write("Searching project variables...");
             foreach (var project in projects)
             {
-                var variables = _repository.VariableSets.Get(project.VariableSetId).Variables;
+                var projectVariableSet = await _octopusClient.GetResource<VariableSetResource>($"Variables/{project.VariableSetId}");
+                var variables = projectVariableSet.Variables;
                 if (doSearchInVariableSetsToo)
                 {
                     var vs = project
                         .IncludedLibraryVariableSetIds
-                        .SelectMany(o => _repository.VariableSets.Get(libraryVariableSets.Single(oo => oo.Id == o).VariableSetId).Variables);
+                        .SelectMany(_ =>
+                        {
+                            var libraryVariableSetId = libraryVariableSets.Single(__ => __.Id == _).VariableSetId;
+                            var variableSet = _octopusClient.GetResource<VariableSetResource>($"Variables/{libraryVariableSetId}").Result;
+                            return variableSet.Variables;
+                        });
 
                     variables = variables
                         .Union(vs)
@@ -57,22 +59,23 @@ namespace OctopusSearch.Core
             }
 
             Console.Write("Searching variable sets...");
-            foreach (var variableSet in libraryVariableSets)
+            foreach (var libraryVariableSet in libraryVariableSets)
             {
-                var variables = _repository.VariableSets.Get(variableSet.VariableSetId).Variables;
+                var variableSet = await _octopusClient.GetResource<VariableSetResource>($"Variables/{libraryVariableSet.VariableSetId}");
+                var variables = variableSet.Variables;
                 findings.AddRange(
                     from variable in variables
                     where variable.Name?.Contains(search) == true || variable.Value?.Contains(search) == true
-                    select new FoundProjectVariable { VariableSet = variableSet.Name, VariableName = variable.Name, VariableValue = variable.Value });
+                    select new FoundProjectVariable { VariableSet = libraryVariableSet.Name, VariableName = variable.Name, VariableValue = variable.Value });
             }
 
             return findings.ToArray();
         }
 
-        public FoundProjectByRole[] GetProjectsByRole(params string[] roles)
+        public async Task<FoundProjectByRole[]> GetProjectsByRole(params string[] roles)
         {
             Console.WriteLine("Getting projects...");
-            var projects = _repository.Projects.GetAll();
+            var projects = await _octopusClient.GetResources<ProjectResource>("Projects/all");
 
             var findings = new List<FoundProjectByRole>();
             for (var projectIndex = 0; projectIndex < projects.Count; projectIndex++)
@@ -82,7 +85,7 @@ namespace OctopusSearch.Core
                     continue;
 
                 Console.Write($"\rSearching projects {projectIndex + 1} of {projects.Count}...");
-                var deploymentProcess = _repository.DeploymentProcesses.Get(project.DeploymentProcessId);
+                var deploymentProcess = await _octopusClient.GetResource<DeploymentProcessResource>($"DeploymentProcesses/{project.DeploymentProcessId}");
                 var allRolesUsed = deploymentProcess.Steps
                     .Where(o => o.Properties.ContainsKey(OctopusActionTargetRolesKey))
                     .SelectMany(o => o.Properties[OctopusActionTargetRolesKey]?.Value.Split(','))
@@ -99,10 +102,10 @@ namespace OctopusSearch.Core
             return findings.ToArray();
         }
 
-        public FoundProjectByVariableSetName[] GetProjectsUsingAVariableSet(string variableSetId)
+        public async Task<FoundProjectByVariableSetName[]> GetProjectsUsingAVariableSet(string variableSetId)
         {
             Console.WriteLine("Getting projects...");
-            var projects = _repository.Projects.GetAll();
+            var projects = await _octopusClient.GetResources<ProjectResource>("Projects/all");
 
             var findings = new List<FoundProjectByVariableSetName>();
             for (var projectIndex = 0; projectIndex < projects.Count; projectIndex++)
@@ -122,18 +125,18 @@ namespace OctopusSearch.Core
             return findings.ToArray();
         }
 
-        public FoundDeploymentTargetsWhichVariableSetIsUsed[] GetDeploymentTargetsWhichThisVariableSetIsUsed(string variableSetId, string environmentId, Func<MachineResource, bool> fExcludes = null)
+        public async Task<FoundDeploymentTargetsWhichVariableSetIsUsed[]> GetDeploymentTargetsWhichThisVariableSetIsUsed(string variableSetId, string environmentId, Func<MachineResource, bool> fExcludes = null)
         {
             Console.WriteLine("Getting environments...");
-            var environment = _repository.Environments.Get(environmentId);
+            var environment = await _octopusClient.GetResource<EnvironmentResource>($"Environments/{environmentId}");
 
             Console.WriteLine("Getting machines...");
-            var machines = _repository.Environments.GetMachines(environment)
+            var machines = (await _octopusClient.GetResources<MachineResource>($"Environments/{environmentId}/machines"))
                 .Where(o => fExcludes?.Invoke(o) == false)
                 .ToArray();
 
             Console.WriteLine("Getting projects...");
-            var projects = _repository.Projects.GetAll();
+            var projects = await _octopusClient.GetResources<ProjectResource>("Projects/all");
 
             var findings = new List<FoundDeploymentTargetsWhichVariableSetIsUsed>();
             for (var projectIndex = 0; projectIndex < projects.Count; projectIndex++)
@@ -146,7 +149,7 @@ namespace OctopusSearch.Core
 
                 if (project.IncludedLibraryVariableSetIds.Contains(variableSetId))
                 {
-                    var deploymentProcess = _repository.DeploymentProcesses.Get(project.DeploymentProcessId);
+                    var deploymentProcess = await _octopusClient.GetResource<DeploymentProcessResource>($"DeploymentProcesses/{project.DeploymentProcessId}");
                     var allRolesUsed = deploymentProcess.Steps
                         .Where(o => o.Properties.ContainsKey(OctopusActionTargetRolesKey))
                         .SelectMany(o => o.Properties[OctopusActionTargetRolesKey]?.Value.Split(','))
