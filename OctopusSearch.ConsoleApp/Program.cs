@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using EasyConsoleCore;
 using Microsoft.Extensions.Configuration;
@@ -59,6 +58,7 @@ namespace OctopusSearch.ConsoleApp
                         var searchFor = Input.ReadString("Search for: ");
 
                         _octopusApi.SearchVariablesFor(searchFor)
+                            .Result
                             .ForEach(o => Console.WriteLine($"Project: {o.Project}, VariableSet: {o.VariableSet}, Variable: {o.VariableName}, Value: {o.VariableValue}"));
                     })
                 .Add("Get projects by role(s) (which are specified in the project's process)", () =>
@@ -74,6 +74,7 @@ namespace OctopusSearch.ConsoleApp
                         } while (enteredRole.IsEmpty());
 
                         _octopusApi.GetProjectsByRole(roles.ToArray())
+                            .Result
                             .ForEach(o => Console.WriteLine($"Project: {o.Project}, Found Roles: {string.Join(",", o.FoundRoles)}, All Roles: {string.Join(",", o.AllRoles)}"));
                     })
                 .Add("Get projects which are using a variable set", () =>
@@ -81,6 +82,7 @@ namespace OctopusSearch.ConsoleApp
                         var variableSetId = Input.ReadString("Enter the variable set id: ");
 
                         _octopusApi.GetProjectsUsingAVariableSet(variableSetId)
+                            .Result
                             .ForEach(o => Console.WriteLine($"Project: {o.Project}"));
                     })
                 .Add("Get deployment targets which are using a variable set in an enviroment (indirectly via a project)", () =>
@@ -89,6 +91,7 @@ namespace OctopusSearch.ConsoleApp
                         var environmentId = Input.ReadString("Enter the environment id: ");
 
                         _octopusApi.GetDeploymentTargetsWhichThisVariableSetIsUsed(variableSetId, environmentId)
+                            .Result
                             .ForEach(o => Console.WriteLine($"Project: {o.Project}, Machines: {string.Join(", ", o.Machines)}"));
                     })
                 .Add("Exit", () =>
