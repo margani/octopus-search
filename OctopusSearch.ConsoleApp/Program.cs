@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using NDesk.Options;
 using OctopusSearch.Core;
 
-namespace OctopusSearch.ConsoleApp
+namespace OctopusSearch
 {
     class Program
     {
