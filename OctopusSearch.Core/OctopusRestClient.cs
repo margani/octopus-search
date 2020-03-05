@@ -14,19 +14,20 @@ namespace OctopusSearch.Core
         public OctopusRestClient(string server, string apiKey)
         {
             _client.BaseAddress = new Uri(server);
+            _client.Timeout = TimeSpan.FromMinutes(10);
             _apiKey = apiKey;
         }
 
         public async Task<List<T>> GetResources<T>(string resourceUrl)
         {
-            var responseJson = await _client.GetStringAsync($"{_client.BaseAddress}api/{resourceUrl}?apikey={_apiKey}");
+            var responseJson = await _client.GetStringAsync($"{_client.BaseAddress}api/{resourceUrl}?apikey={_apiKey}").ConfigureAwait(false);
 
             return JsonConvert.DeserializeObject<List<T>>(responseJson);
         }
 
         public async Task<T> GetResource<T>(string resourceUrl)
         {
-            var responseJson = await _client.GetStringAsync($"{_client.BaseAddress}api/{resourceUrl}?apikey={_apiKey}");
+            var responseJson = await _client.GetStringAsync($"{_client.BaseAddress}api/{resourceUrl}?apikey={_apiKey}").ConfigureAwait(false);
 
             return JsonConvert.DeserializeObject<T>(responseJson);
         }

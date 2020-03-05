@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using EasyConsoleCore;
 using Microsoft.Extensions.Configuration;
 using NDesk.Options;
@@ -21,16 +22,17 @@ namespace OctopusSearch.ConsoleApp
 
             var configuration = builder.Build();
 
-            Console.WriteLine(configuration.GetConnectionString("Storage"));
-
             var apiUrl = configuration["Octopus:APIUrl"];
             var apiKey = configuration["Octopus:APIKey"];
+            var preFetchOctopusVariableSets = false;
             var help = false;
 
-            var p = new OptionSet {
-                { "api-url",      v => apiUrl = v },
-                { "api-key",      v => apiKey = v },
-                { "h|?|help",   v => help = v != null },
+            var p = new OptionSet
+            {
+                { "api-url", _ => apiUrl = _ },
+                { "api-key", _ => apiKey = _ },
+                { "pre-fetch-variable-sets", _ => preFetchOctopusVariableSets = Convert.ToBoolean(_) },
+                { "h|?|help", _ => help = _ != null },
             };
 
             var extra = p.Parse(args);
@@ -38,7 +40,7 @@ namespace OctopusSearch.ConsoleApp
             if (!apiUrl.IsEmpty() &&
                 !apiKey.IsEmpty())
             {
-                _octopusApi = new OctopusApi(apiUrl, apiKey);
+                _octopusApi = new OctopusApi(apiUrl, apiKey, preFetchOctopusVariableSets);
             }
             else
             {
@@ -58,9 +60,16 @@ namespace OctopusSearch.ConsoleApp
                         var searchFor = Input.ReadString("Search for: ");
 
                         _octopusApi.SearchVariablesFor(searchFor)
-                            .Result
-                            .ForEach(o => Console.WriteLine($"Project: {o.Project}, VariableSet: {o.VariableSet}, Variable: {o.VariableName}, Value: {o.VariableValue}"));
+                            .ForEach(o => Console.WriteLine($"Project: {o.Project}, VariableSet: {o.VariableSet}, Environments: [{string.Join(",", o.Environments)}], Variable: {o.VariableName}, Value: {o.VariableValue}"));
                     })
+                .Add("Deep search variables (by name and value)", () =>
+                {
+                    var searchFor = Input.ReadString("Search for: ");
+
+                    _octopusApi.DeepSearchVariablesFor(searchFor)
+                        .ForEach(_ => _.Print());
+
+                })
                 .Add("Get projects by role(s) (which are specified in the project's process)", () =>
                     {
                         var roles = new List<string>();
